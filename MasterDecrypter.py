@@ -13,6 +13,10 @@ class MasterDecrypter:
         self.master_secret = master_secret
         self.server_random = server_random
         self.client_random = client_random
+        self.key_size = int(cipher_size / 8)
+        self.IV_size = 4  # TODO: This changes based on cipher mode (e.g., GCM, CBC, etc.)
+        self.nonce_size = 8  # TODO: Only relevant in GCM mode, but is this constant for all GCM configurations?
+        self.mac_size = 16  # TODO: is this guaranteed to always be the same across all cipher suites?
 
     class _OrderedKeyMaterial:
         def __init__(self):
@@ -26,9 +30,9 @@ class MasterDecrypter:
     def decrypt(self, ciphertext):
         key_material = self._PRF(self.master_secret, b'key expansion', self.server_random + self.client_random)
         ordered_keys = self._get_keys(key_material)
-        nonce = ciphertext[:8]
-        mac = ciphertext[-16:]
-        ciphertext = ciphertext[8:-16]
+        nonce = ciphertext[:self.nonce_size]
+        mac = ciphertext[-1 * self.mac_size:]
+        ciphertext = ciphertext[self.nonce_size:-1 * self.mac_size]
 
         aes_decrypter = AES.new(ordered_keys.client_write_key, self.cipher_mode, ordered_keys.client_write_IV + nonce)
         return aes_decrypter.decrypt(ciphertext)
@@ -51,14 +55,14 @@ class MasterDecrypter:
     def _PRF(self, secret, label, seed):
         return self._P_hash(secret, label + seed)
 
-    def _get_keys(self, key_material):
+    def _get_keys(self, key_material):  # TODO: General cleanup and make this work for more than just GCM mode
         ret = self._OrderedKeyMaterial()
         ret.client_write_MAC_key = b''
         ret.server_write_MAC_key = b''
 
-        ret.client_write_key = key_material[0:32]
-        ret.server_write_key = key_material[32:64]
-        ret.client_write_IV = key_material[64:68]
-        ret.server_write_IV = key_material[68:72]
+        ret.client_write_key = key_material[0:self.key_size]
+        ret.server_write_key = key_material[self.key_size: 2 * self.key_size]
+        ret.client_write_IV = key_material[2 * self.key_size: 2 * self.key_size + self.IV_size]
+        ret.server_write_IV = key_material[2 * self.key_size + self.IV_size:2 * self.key_size + 2 * self.IV_size]
 
         return ret
