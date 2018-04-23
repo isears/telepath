@@ -37,7 +37,7 @@ class MasterDecrypter:
         aes_decrypter = AES.new(ordered_keys.client_write_key, self.cipher_mode, ordered_keys.client_write_IV + nonce)
         return aes_decrypter.decrypt(ciphertext)
 
-    def decrypt_server(self, ciphertext):  # TODO: This is sad and broken (can't decrypt data from server)
+    def decrypt_server(self, ciphertext):
         key_material = self._PRF(self.master_secret, b'key expansion', self.server_random + self.client_random)
         ordered_keys = self._get_keys(key_material)
         nonce = ciphertext[:self.nonce_size]

@@ -98,5 +98,10 @@ elif len(application_datas_c2s) + len(application_datas_s2c) < 1:
 enc_algo, size, mode, hash_algo = cs_name_to_values(ciphersuite)
 decrypter = MasterDecrypter.MasterDecrypter(size, mode, hash_algo, master_secret, server_random, client_random)
 
+print('Client Records {}'.format('-' * 20))
 for record in application_datas_c2s:
     print(decrypter.decrypt_client(record))
+
+print('Server Records {}'.format('-' * 20))
+for record in application_datas_s2c:
+    print(decrypter.decrypt_server(record)[:100])
