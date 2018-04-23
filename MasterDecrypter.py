@@ -27,7 +27,7 @@ class MasterDecrypter:
             self.client_write_IV = b''
             self.server_write_IV = b''
 
-    def decrypt(self, ciphertext):
+    def decrypt_client(self, ciphertext):
         key_material = self._PRF(self.master_secret, b'key expansion', self.server_random + self.client_random)
         ordered_keys = self._get_keys(key_material)
         nonce = ciphertext[:self.nonce_size]
@@ -35,6 +35,16 @@ class MasterDecrypter:
         ciphertext = ciphertext[self.nonce_size:-1 * self.mac_size]
 
         aes_decrypter = AES.new(ordered_keys.client_write_key, self.cipher_mode, ordered_keys.client_write_IV + nonce)
+        return aes_decrypter.decrypt(ciphertext)
+
+    def decrypt_server(self, ciphertext):  # TODO: This is sad and broken (can't decrypt data from server)
+        key_material = self._PRF(self.master_secret, b'key expansion', self.server_random + self.client_random)
+        ordered_keys = self._get_keys(key_material)
+        nonce = ciphertext[:self.nonce_size]
+        mac = ciphertext[-1 * self.mac_size]
+        ciphertext = ciphertext[self.nonce_size:-1 * self.mac_size]
+
+        aes_decrypter = AES.new(ordered_keys.server_write_key, self.cipher_mode, ordered_keys.server_write_IV + nonce)
         return aes_decrypter.decrypt(ciphertext)
 
     def _HMAC_hash(self, secret, seed):
