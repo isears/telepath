@@ -19,4 +19,4 @@ tls_decrypter = MasterDecrypter.MasterDecrypter(
     client_random
 )
 
-print(tls_decrypter.decrypt(client_cipher_text))
+print(tls_decrypter.decrypt_client(client_cipher_text))
